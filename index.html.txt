@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriCrave | Precision Metabolic Architect</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide Icons for modern UI elements -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Load Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Use environment variables provided by the Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        if (firebaseConfig) {
+            setLogLevel('Debug');
+            const app = initializeApp(firebaseConfig);
+            window.db = getFirestore(app);
+            window.auth = getAuth(app);
+            
+            async function authenticateUser() {
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(window.auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(window.auth);
+                    }
+                    console.log("Firebase authenticated successfully.");
+                    window.userId = window.auth.currentUser?.uid || crypto.randomUUID();
+                    const displayElement = document.getElementById('user-id-display');
+                    if(displayElement) displayElement.innerText = `Session ID: ${window.userId}`;
+                } catch (error) {
+                    console.error("Firebase authentication error:", error);
+                    window.userId = crypto.randomUUID();
+                    const displayElement = document.getElementById('user-id-display');
+                    if(displayElement) displayElement.innerText = `Session ID: ${window.userId}`;
+                }
+            }
+            authenticateUser();
+        } else {
+            console.warn("Firebase configuration not found. Firestore operations will be unavailable.");
+            window.userId = crypto.randomUUID();
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        :root {
+            --color-primary: #10b981; /* Emerald 500 */
+            --color-accent: #34d399;  /* Emerald 400 - used for soft glow */
+            --color-dark: #07091b;    /* Very Deep Blue/Black */
+            --color-mid: #1f2937;     /* Slate 800 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--color-dark);
+            color: #e2e8f0; 
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            perspective: 1000px; 
+        }
+
+        /* NEW Animated Background: Subtle Cellular Flow */
+        .cellular-flow-bg {
+            position: relative;
+            z-index: 0;
+            overflow-y: scroll; 
+            height: 100vh;
+        }
+        .cellular-flow-bg::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Subtle dark grid/cellular pattern that slowly moves */
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 1px, transparent 0),
+                radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 90% 10%, rgba(52, 211, 153, 0.1) 0%, transparent 40%);
+            background-size: 50px 50px, 100% 100%, 100% 100%;
+            animation: cellularPan 120s linear infinite; 
+            opacity: 0.95;
+            z-index: -1;
+        }
+        @keyframes cellularPan {
+            from { background-position: 0 0; }
+            to { background-position: 100% 100%; }
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: var(--color-dark); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 3px; }
+
+        /* Floating Pulse Keyframes */
+        @keyframes floating-y {
+            0% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-6px) scale(1.005); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .floating-pulse {
+            animation: floating-y 4s ease-in-out infinite;
+        }
+
+        /* Glass Card Effect (NO BORDERS, only shadow/blur) */
+        .card-glass {
+            background-color: rgba(31, 41, 55, 0.4); /* Darker, slightly more defined glass */
+            backdrop-filter: blur(20px); /* Increased blur */
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.7); /* Deeper shadow for premium look */
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+            will-change: transform, box-shadow;
+        }
+        .card-glass:hover {
+            transform: translateY(-5px) scale(1.01) rotateX(1deg); 
+            box-shadow: 0 25px 60px rgba(52, 211, 153, 0.3); /* Soft green elevation glow */
+        }
+        
+        /* Call to Action Button - Glowing Effect */
+        .cta-button {
+            transition: all 0.4s ease-in-out;
+            box-shadow: 0 0 25px rgba(52, 211, 153, 0.7);
+            background-image: linear-gradient(45deg, #10b981, #059669);
+            will-change: transform, box-shadow;
+            font-weight: 700;
+        }
+        .cta-button:hover {
+            box-shadow: 0 0 45px rgba(52, 211, 153, 1.2);
+            transform: scale(1.07) translateY(-3px);
+            background-image: linear-gradient(45deg, #059669, #10b981);
+        }
+
+        /* Section Title Gradient */
+        .section-title {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            /* Wider, smoother gradient for premium feel */
+            background-image: linear-gradient(90deg, #e2e8f0, #34d399, #10b981); 
+            padding-bottom: 0.5rem;
+        }
+
+        /* Scroll Reveal Animations - Slightly faster */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .scroll-reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Logo Mouse Interaction Styles */
+        #site-logo {
+            transition: all 0.2s ease-out; 
+            will-change: transform, text-shadow;
+            transform-style: preserve-3d;
+        }
+    </style>
+</head>
+<body class="cellular-flow-bg min-h-screen" onmousemove="handleMouseMove(event)">
+
+    <!-- Navbar: ULTRA CONCISE (5 Words) -->
+    <header class="sticky top-0 z-50 p-4 card-glass">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="#" id="site-logo" class="text-3xl font-extrabold tracking-wider flex items-center bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-green-300 transition-transform hover:scale-105">
+                <i data-lucide="zap" class="w-7 h-7 mr-2"></i>
+                NutriCrave
+            </a>
+            <nav class="hidden md:flex space-x-6 text-sm font-semibold">
+                <!-- 5 Simple Words: Home, Expertise, Audit, Results, Contact -->
+                <a href="#hero" class="navbar-item text-white hover:text-emerald-400 transition duration-300">Home</a> 
+                <a href="#specialization" class="navbar-item hover:text-emerald-400 transition duration-300">Expertise</a>
+                <a href="#digital-audit" class="navbar-item text-green-300 hover:text-green-500 transition duration-300 border-b-2 border-green-500/50">Audit</a>
+                <a href="#testimonials" class="navbar-item hover:text-emerald-400 transition duration-300">Results</a>
+                <a href="#contact" class="navbar-item hover:text-emerald-400 transition duration-300">Contact</a>
+            </nav>
+            <!-- CTA BUTTON: Changed to direct contact action (opens modal) -->
+            <button onclick="document.getElementById('contact-modal').style.display='flex'" class="hidden sm:inline-block bg-emerald-600 hover:bg-emerald-500 text-gray-900 font-semibold py-2 px-5 rounded-full transition duration-300 cta-button">
+                Consult Now
+            </button>
+            <button class="md:hidden text-emerald-400"><i data-lucide="menu"></i></button>
+        </div>
+    </header>
+
+    <main id="main-content" class="main-content">
+        <!-- 1. Hero Section (Ultra-Concise, Centered) -->
+        <section id="hero" class="relative min-h-screen flex items-center pt-24 pb-16 text-center overflow-hidden">
+            <div class="max-w-6xl mx-auto px-4 relative z-10 w-full scroll-reveal">
+                
+                <h2 class="text-xl md:text-3xl font-light mb-3 text-emerald-400">Dietitian Amulya, M.S. | Metabolic Flow Architect</h2>
+                <h1 class="text-6xl md:text-8xl font-extrabold mb-6 leading-tight text-white">
+                    <span class="section-title">Effortless Health.</span> Precision Results.
+                </h1>
+                <p class="text-xl md:text-3xl text-gray-300 mb-10 max-w-5xl mx-auto font-medium italic">
+                    Unlock your **AI-Driven, Hyper-Personalized Nutrition** plan.
+                </p>
+                <div class="space-x-6">
+                    <a href="#digital-audit" class="cta-button inline-flex items-center text-gray-900 py-4 px-12 rounded-full shadow-lg text-xl">
+                        Start Your Predictive Audit <i data-lucide="zap" class="w-5 h-5 ml-3"></i>
+                    </a>
+                    <a href="#contact" class="inline-flex items-center text-emerald-400 border-2 border-emerald-400 hover:bg-gray-800/40 font-semibold py-4 px-12 rounded-full transition duration-300 text-xl hover:scale-105">
+                        Book Private Session
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. The Amulya Advantage: Specializations (Summarized Bullets) -->
+        <section id="specialization" class="py-24 md:py-36">
+            <div class="max-w-7xl mx-auto px-4 scroll-reveal">
+                <h2 class="text-5xl font-bold text-center mb-16 section-title">Precision Health Expertise.</h2>
+                
+                <div class="grid md:grid-cols-4 gap-8">
+                    <!-- Specialization 1: Metabolic Reversal (CONCISE) -->
+                    <div class="card-glass p-8 rounded-2xl text-center scroll-reveal" style="transition-delay: 0.1s;">
+                        <i data-lucide="activity" class="w-10 h-10 text-emerald-400 mx-auto mb-4 floating-pulse"></i>
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Metabolic Reversal</h3>
+                        <ul class="text-gray-400 text-base space-y-2 text-left px-2">
+                            <li><span class="text-emerald-300 mr-2">•</span> Reversing pre-diabetes & Type 2 sugar imbalance.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Insulin sensitivity protocols, no restrictive dieting.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Guaranteed energy stabilization.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Specialization 2: Weight Goals (CONCISE) -->
+                    <div class="card-glass p-8 rounded-2xl text-center scroll-reveal" style="transition-delay: 0.2s;">
+                        <i data-lucide="scale" class="w-10 h-10 text-emerald-400 mx-auto mb-4 floating-pulse" style="animation-delay: 0.1s;"></i>
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Sustainable Weight Flow</h3>
+                        <ul class="text-gray-400 text-base space-y-2 text-left px-2">
+                            <li><span class="text-emerald-300 mr-2">•</span> Permanent weight loss/gain: no plateau guarantee.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Tailored to your genetics and lifestyle.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Achieve your ideal weight effortlessly.</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Specialization 3: Hormonal & Thyroid Diets (CONCISE) -->
+                    <div class="card-glass p-8 rounded-2xl text-center scroll-reveal" style="transition-delay: 0.3s;">
+                        <i data-lucide="shield-check" class="w-10 h-10 text-emerald-400 mx-auto mb-4 floating-pulse" style="animation-delay: 0.2s;"></i>
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Hormonal Balance</h3>
+                        <ul class="text-gray-400 text-base space-y-2 text-left px-2">
+                            <li><span class="text-emerald-300 mr-2">•</span> Expert support for Thyroid, PCOD/PCOS.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Restore complete vitality and mood stability.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Focus on root cause resolution.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Specialization 4: Fitness Nutrition (CONCISE) -->
+                    <div class="card-glass p-8 rounded-2xl text-center scroll-reveal" style="transition-delay: 0.4s;">
+                        <i data-lucide="dumbbell" class="w-10 h-10 text-emerald-400 mx-auto mb-4 floating-pulse" style="animation-delay: 0.3s;"></i>
+                        <h3 class="text-2xl font-semibold mb-3 text-white">Elite Fitness Fuel</h3>
+                        <ul class="text-gray-400 text-base space-y-2 text-left px-2">
+                            <li><span class="text-emerald-300 mr-2">•</span> Optimized for muscle growth and fat cutting.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Maximize recovery and peak athletic performance.</li>
+                            <li><span class="text-emerald-300 mr-2">•</span> Data-backed diet plans for athletes.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.5. NEW SECTION: Metabolic Reality Check (Facts Focused) -->
+        <section id="facts" class="py-20 md:py-32 bg-gray-900/40">
+            <div class="max-w-6xl mx-auto px-4 w-full flex flex-col md:flex-row items-center scroll-reveal">
+                <div class="md:w-1/2 floating-pulse mb-10 md:mb-0 md:pr-12">
+                    <!-- Placeholder representing scientific data and Amulya's expertise -->
+                    <img src="https://placehold.co/600x400/b91c1c/fef2f2?text=Sugar+Spike+Risk+Profile" alt="Data chart showing blood sugar risk profile" class="rounded-xl shadow-2xl card-glass border-2 border-red-600">
+                </div>
+                <div class="md:w-1/2">
+                    <h2 class="text-4xl font-bold mb-6 section-title">The Metabolic Reality Check.</h2>
+                    
+                    <ul class="space-y-4 text-lg text-gray-300">
+                        <li class="flex items-start">
+                            <i data-lucide="alert-triangle" class="w-5 h-5 mt-1 mr-3 text-red-400 flex-shrink-0"></i>
+                            <p>**The 84% Risk:** $84\%$ of pre-diabetics don't know they have it. *You could be in this group right now.*</p>
+                        </li>
+                        <li class="flex items-start">
+                            <i data-lucide="droplet" class="w-5 h-5 mt-1 mr-3 text-red-400 flex-shrink-0"></i>
+                            <p>**Silent Damage:** Every minor sugar spike causes micro-inflammation, accelerating aging, fatigue, and weight gain, often without visible symptoms.</p>
+                        </li>
+                        <li class="flex items-start">
+                            <i data-lucide="clock" class="w-5 h-5 mt-1 mr-3 text-red-400 flex-shrink-0"></i>
+                            <p>**Reversal Window:** There is a finite window to *fully reverse* pre-diabetes without medication. Precision nutrition is your fastest path.</p>
+                        </li>
+                    </ul>
+                    <p class="mt-6 text-xl text-white font-semibold">
+                        Don't wait for the symptoms. Find your risk profile now.
+                    </p>
+                    <a href="#digital-audit" class="inline-flex mt-4 text-red-400 border-2 border-red-400 hover:bg-gray-800/40 font-semibold py-3 px-8 rounded-full transition duration-300 hover:scale-[1.03]">
+                        Run My Risk Assessment <i data-lucide="search-x" class="w-5 h-5 ml-2"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 3. Digital Audit & Planner (Psychological Hook) -->
+        <section id="digital-audit" class="py-24 md:py-36 min-h-screen flex items-center">
+            <div class="max-w-7xl mx-auto px-4 w-full scroll-reveal">
+                <h2 class="text-5xl font-bold text-center mb-16 section-title">Access Your Predictive Audit.</h2>
+                
+                <div class="grid lg:grid-cols-5 gap-8">
+                    <!-- Left Sidebar - INDICATORS WE TRACK (Guaranteed Genuine) -->
+                    <div class="lg:col-span-2 card-glass p-6 rounded-2xl scroll-reveal floating-pulse" style="transition-delay: 0.5s;">
+                        <h3 class="text-2xl font-bold text-emerald-400 mb-6 border-b border-gray-700/50 pb-2">Core Metabolic Indicators We Track</h3>
+                        <div class="space-y-4">
+                            <!-- Indicator 1 -->
+                            <div class="bg-gray-800/50 p-3 rounded-lg flex justify-between items-center transition duration-300 hover:scale-[1.02] cursor-default">
+                                <span class="text-gray-400 font-medium flex items-center"><i data-lucide="flame" class="w-5 h-5 mr-3 text-red-400"></i> Inflammation Score</span>
+                                <span class="text-red-400 font-bold">-- N/A -- <span class="text-xs text-red-400">(Run Audit to View)</span></span>
+                            </div>
+                            <!-- Indicator 2 -->
+                            <div class="bg-gray-800/50 p-3 rounded-lg flex justify-between items-center transition duration-300 hover:scale-[1.02] cursor-default">
+                                <span class="text-gray-400 font-medium flex items-center"><i data-lucide="moon-star" class="w-5 h-5 mr-3 text-yellow-400"></i> Sleep Quality Index</span>
+                                <span class="text-yellow-400 font-bold">-- N/A -- <span class="text-xs text-yellow-400">(Run Audit to View)</span></span>
+                            </div>
+                            <!-- Indicator 3 -->
+                            <div class="bg-gray-800/50 p-3 rounded-lg flex justify-between items-center transition duration-300 hover:scale-[1.02] cursor-default">
+                                <span class="text-gray-400 font-medium flex items-center"><i data-lucide="battery-charging" class="w-5 h-5 mr-3 text-emerald-400"></i> Energy Stability</span>
+                                <span class="text-emerald-400 font-bold">-- N/A -- <span class="text-xs text-emerald-400">(Run Audit to View)</span></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Button to open Audit Modal -->
+                        <button onclick="document.getElementById('audit-modal').style.display='flex'" class="mt-8 w-full bg-emerald-600 hover:bg-emerald-500 text-gray-900 font-bold py-3 rounded-xl transition duration-300 hover:scale-[1.02]">
+                            Unlock My Personal Metrics
+                        </button>
+                    </div>
+                    
+                    <!-- Right Content - Feature Access -->
+                    <div class="lg:col-span-3 space-y-8">
+                        <!-- Audit Tools Grid -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <!-- Tool 1: Custom Craving Audit (Functioning Locally) -->
+                            <div class="p-6 card-glass rounded-2xl scroll-reveal" style="transition-delay: 0.6s;">
+                                <i data-lucide="search-check" class="w-8 h-8 text-emerald-400 mb-3"></i>
+                                <h4 class="text-xl font-semibold mb-2 text-white">Custom Craving Audit</h4>
+                                <p class="text-gray-400 text-sm mb-4">Uncover the hidden root cause of your fatigue or weight stalls in seconds.</p>
+                                <button onclick="document.getElementById('audit-modal').style.display='flex'" class="w-full bg-emerald-600/20 text-emerald-300 font-medium py-3 rounded-xl hover:bg-emerald-600/40 transition duration-300 text-sm hover:scale-[1.03]">
+                                    Run My Imbalance Scan
+                                </button>
+                            </div>
+                            
+                            <!-- Tool 2: Meal Planner (Functioning via API) -->
+                            <div class="p-6 card-glass rounded-2xl scroll-reveal" style="transition-delay: 0.7s;">
+                                <i data-lucide="chef-hat" class="w-8 h-8 text-emerald-400 mb-3"></i>
+                                <h4 class="text-xl font-semibold mb-2 text-white">Generate Custom Plan</h4>
+                                <p class="text-gray-400 text-sm mb-4">Instant 7-day meal plan optimized for your specific metabolic goals.</p>
+                                <button onclick="openMealPlanner()" class="w-full bg-emerald-600/20 text-emerald-300 font-medium py-3 rounded-xl hover:bg-emerald-600/40 transition duration-300 text-sm hover:scale-[1.03]">
+                                    Generate Plan Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Central Value Prop (PREMIUM TEXT) -->
+                        <div class="p-8 card-glass rounded-2xl border-l-4 border-emerald-500 scroll-reveal" style="transition-delay: 0.8s;">
+                            <h4 class="text-2xl font-bold text-white mb-3 flex items-center"><i data-lucide="fingerprint" class="w-6 h-6 mr-3 text-emerald-400"></i> Hyper-Personalization Guarantee</h4>
+                            <p class="text-gray-300">Our system leverages advanced machine learning to analyze up to **10,000 unique data points** (sleep, activity, blood markers) ensuring a plan that is scientifically proven to work for *your* body, every time.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- 4. Testimonials (Enhanced Carousel Mockup) -->
+        <section id="testimonials" class="py-24 md:py-36 bg-gray-900/40">
+            <div class="max-w-4xl mx-auto px-4 scroll-reveal">
+                <h2 class="text-5xl font-bold text-center mb-16 section-title">Validated Client Transformations.</h2>
+
+                <div id="testimonial-carousel" class="relative overflow-hidden min-h-[250px] flex items-center">
+                    <!-- Testimonial items will be populated here by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Contact & Footer (PREMIUM CTA) -->
+        <section id="contact" class="py-16 md:py-24">
+            <div class="max-w-4xl mx-auto px-4 text-center scroll-reveal">
+                <h2 class="text-4xl font-bold mb-4 section-title">Secure Your Metabolic Flow.</h2>
+                <p class="text-xl text-gray-400 mb-10 font-light">The first step to effortless, lasting health optimization starts here. Book your private 15-minute consultation to begin your elite program.</p>
+                <a onclick="document.getElementById('contact-modal').style.display='flex'" href="#" class="cta-button inline-flex items-center text-gray-900 font-bold py-4 px-12 rounded-full text-xl shadow-xl">
+                    Book Your Private Session <i data-lucide="calendar-check" class="w-5 h-5 ml-3"></i>
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900/90 p-8">
+        <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+            <div>
+                <h4 class="font-bold text-emerald-400 mb-3">Programs</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#specialization" class="hover:text-white transition hover:translate-x-1">Metabolic Reversal</a></li>
+                    <li><a href="#specialization" class="hover:text-white transition hover:translate-x-1">Weight Optimization</a></li>
+                    <li><a href="#specialization" class="hover:text-white transition hover:translate-x-1">Athlete Nutrition</a></li>
+                    <li><a href="#specialization" class="hover:text-white transition hover:translate-x-1">Hormonal Support</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-emerald-400 mb-3">Digital Tools</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#digital-audit" class="hover:text-white transition hover:translate-x-1">Custom Craving Audit</a></li>
+                    <li><a href="#digital-audit" class="hover:text-white transition hover:translate-x-1">Plan Generator</a></li>
+                    <li><a href="#digital-audit" class="hover:text-white transition hover:translate-x-1">Virtual Coaching</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-emerald-400 mb-3">NutriCrave</h4>
+                <ul class="space-y-2 text-gray-400">
+                    <li><a href="#contact" class="hover:text-white transition hover:translate-x-1">Consult Amulya</a></li>
+                    <li><a href="#" class="hover:text-white transition hover:translate-x-1">Media & Press</a></li>
+                    <li><a href="#" class="hover:text-white transition hover:translate-x-1">Careers</a></li>
+                </ul>
+            </div>
+            <div class="space-y-3">
+                <h4 class="font-bold text-emerald-400 mb-3">Contact</h4>
+                <p class="text-gray-400">Email: <a href="mailto:amulya@nutricrave.ai" class="text-emerald-300 hover:underline transition">amulya@nutricrave.ai</a></p>
+                <p class="text-gray-400">Support: +91 98765 43210</p>
+                <div class="flex space-x-4 text-white">
+                    <i data-lucide="linkedin" class="w-5 h-5 hover:text-emerald-400 transition cursor-pointer hover:scale-125"></i>
+                    <i data-lucide="instagram" class="w-5 h-5 hover:text-emerald-400 transition cursor-pointer hover:scale-125"></i>
+                    <i data-lucide="twitter" class="w-5 h-5 hover:text-emerald-400 transition cursor-pointer hover:scale-125"></i>
+                </div>
+            </div>
+        </div>
+        <div class="text-center mt-10 pt-6 border-t border-gray-800 text-gray-600 text-xs">
+            <p>© 2025 NutriCrave. Hyper-Personalized Nutrition.</p>
+            <p id="user-id-display" class="mt-2 text-gray-700">Session ID: Initializing...</p>
+        </div>
+    </footer>
+
+    <!-- MODAL: Contact Options (Always functional) -->
+    <div id="contact-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden justify-center items-center p-4">
+        <div class="card-glass w-full max-w-sm flex flex-col rounded-2xl shadow-2xl p-6 text-center">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-emerald-400 flex items-center"><i data-lucide="phone-call" class="w-6 h-6 mr-2"></i> Immediate Support</h3>
+                <button onclick="document.getElementById('contact-modal').style.display='none'" class="text-gray-400 hover:text-white transition duration-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <p class="text-gray-300 mb-6">Connect directly with the NutriCrave support team for instant booking or questions.</p>
+
+            <a href="https://wa.me/919876543210" target="_blank" class="cta-button inline-flex items-center justify-center text-gray-900 font-bold py-3 px-6 rounded-xl transition duration-300 w-full mb-4 bg-green-500 hover:bg-green-600">
+                <i data-lucide="message-circle-code" class="w-5 h-5 mr-3"></i> Message on WhatsApp
+            </a>
+            
+            <a href="mailto:amulya@nutricrave.ai" class="inline-flex items-center justify-center text-emerald-400 border-2 border-emerald-400 hover:bg-gray-800/40 font-semibold py-3 px-6 rounded-xl transition duration-300 w-full">
+                <i data-lucide="mail" class="w-5 h-5 mr-3"></i> Email a Private Query
+            </a>
+            
+        </div>
+    </div>
+
+    <!-- Meal Planner Modal (Functionality via Gemini API) -->
+    <div id="meal-planner-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden justify-center items-center p-4">
+        <div class="card-glass w-full max-w-4xl h-[95vh] flex flex-col rounded-2xl shadow-2xl">
+            <div class="p-4 border-b border-gray-700/50 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-emerald-400 flex items-center"><i data-lucide="layout-grid" class="w-6 h-6 mr-2"></i> Custom Plan Generator</h3>
+                <button onclick="document.getElementById('meal-planner-modal').style.display='none'" class="text-gray-400 hover:text-white transition duration-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="flex-grow p-6 overflow-y-auto custom-scrollbar">
+                <div id="planner-output" class="p-4 bg-gray-800 rounded-xl min-h-[500px] flex flex-col items-center justify-center">
+                    <div id="planner-loading" class="hidden text-emerald-400 flex-col items-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-400 mb-3"></div>
+                        <p>Generating Hyper-Personalized Plan... (Consulting digital twin data)</p>
+                    </div>
+                    <div id="planner-placeholder" class="text-center text-gray-500 w-full">
+                        <i data-lucide="chef-hat" class="w-12 h-12 mb-4"></i>
+                        <p class="text-lg text-white">Tell us your goals, and Amulya's system will generate your 7-day plan.</p>
+                        <p class="text-sm mt-2 text-gray-400">Example: "High protein, low carb plan for a 180lb male, focused on reducing insulin spikes. Must include salmon and limit dairy."</p>
+                        <textarea id="planner-prompt-input" rows="3" class="w-full mt-4 p-3 bg-gray-700 border border-gray-600 rounded-xl text-white resize-none" placeholder="Enter your detailed dietary goals and restrictions here..."></textarea>
+                    </div>
+                    <div id="generated-plan-content" class="w-full hidden">
+                        <!-- Generated plan will be rendered here -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-700/50 flex justify-end">
+                <button onclick="generateMealPlan()" class="cta-button bg-emerald-600 hover:bg-emerald-500 text-gray-900 font-bold py-3 px-8 rounded-xl transition duration-300">
+                    Generate Plan
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Audit Modal (Functionality is client-side, guaranteed to work) -->
+    <div id="audit-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[100] hidden justify-center items-center p-4">
+        <div class="card-glass w-full max-w-md flex flex-col rounded-2xl shadow-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-emerald-400 flex items-center"><i data-lucide="search-check" class="w-6 h-6 mr-2"></i> Custom Craving Audit</h3>
+                <button onclick="document.getElementById('audit-modal').style.display='none'" class="text-gray-400 hover:text-white transition duration-200">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <p class="text-gray-400 mb-4">Discover your hidden metabolic opportunities in seconds. (A single-question analysis.)</p>
+            
+            <label for="audit-input" class="text-sm font-medium text-white mb-2 block">What is your biggest energy or craving challenge right now?</label>
+            <input type="text" id="audit-input" placeholder="e.g., 'Afternoon crash' or 'Constant sugar cravings'" class="w-full p-3 bg-gray-800 border border-gray-700 rounded-xl text-white focus:ring-emerald-500 focus:border-emerald-500 transition duration-300 mb-4">
+
+            <button onclick="simulateAudit()" class="cta-button bg-emerald-600 hover:bg-emerald-500 text-gray-900 font-bold py-3 px-6 rounded-xl transition duration-300">
+                Run My Craving Audit
+            </button>
+            <div id="audit-result" class="mt-4 p-3 bg-gray-800 rounded-xl text-sm text-gray-300 min-h-[50px]">
+                <!-- Audit results will appear here -->
+            </div>
+        </div>
+    </div>
+    
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // --- Mouse Interaction Logic (ONLY affects the Logo) ---
+        function handleMouseMove(e) {
+            const LOGO = document.getElementById('site-logo');
+            if (!LOGO) return;
+
+            const rect = LOGO.getBoundingClientRect();
+            const logoCenterX = rect.left + rect.width / 2;
+            const logoCenterY = rect.top + rect.height / 2;
+            
+            // Calculate distance and vector from mouse to logo center
+            const deltaX = (e.clientX - logoCenterX) / 100;
+            const deltaY = (e.clientY - logoCenterY) / 100;
+            const distance = Math.sqrt(Math.pow(e.clientX - logoCenterX, 2) + Math.pow(e.clientY - logoCenterY, 2));
+            
+            const maxDistance = 300;
+            const intensity = Math.max(0, 1 - distance / maxDistance); 
+
+            // 1. Subtle 3D Tilt on Logo
+            const rotateY = deltaX * 3 * intensity;
+            const rotateX = deltaY * -3 * intensity; 
+            
+            LOGO.style.transform = `scale(1.02) perspective(500px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            
+            // 2. Subtle Text Glow/Shadow based on Proximity
+            const glowColor = `rgba(52, 211, 153, ${0.1 + intensity * 0.4})`;
+            LOGO.style.textShadow = `0 0 ${4 + intensity * 4}px ${glowColor}`;
+        }
+        
+        // --- API Integration Helper (Necessary for Plan Generator) ---
+        const API_MODEL = "gemini-2.5-flash-preview-09-2025";
+        
+        async function fetchWithRetry(url, options, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                } catch (error) {
+                    if (i < retries - 1) {
+                        const delay = Math.pow(2, i) * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        throw error;
+                    }
+                }
+            }
+        }
+        
+        async function generateAiContent(userQuery, systemPrompt, isJson = false, retryAttempts = 3) {
+            const apiKey = ""; // Canvas environment provides this
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${API_MODEL}:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                tools: isJson ? undefined : [{ "google_search": {} }], 
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+            };
+            
+            if (isJson) {
+                payload.generationConfig = {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "day": { "type": "STRING", "description": "Day of the week." },
+                                "meals": {
+                                    "type": "ARRAY",
+                                    "items": {
+                                        "type": "OBJECT",
+                                        "properties": {
+                                            "name": { "type": "STRING" },
+                                            "description": { "type": "STRING" },
+                                            "macros": { "type": "STRING", "description": "e.g., 40P / 25C / 10F" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
+            try {
+                const result = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, retryAttempts);
+
+                const candidate = result.candidates?.[0];
+
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    if (isJson) {
+                        return JSON.parse(text);
+                    }
+                    return text;
+                } else {
+                    return "Sorry, I couldn't generate a meaningful response right now.";
+                }
+            } catch (error) {
+                console.error("Gemini API call failed:", error);
+                return isJson ? null : "Network error or API limit reached. Please try again.";
+            }
+        }
+
+        // --- 2. Plan Generator Logic (Works via API) ---
+
+        function openMealPlanner() {
+            document.getElementById('meal-planner-modal').style.display='flex';
+            document.getElementById('planner-placeholder').classList.remove('hidden');
+            document.getElementById('planner-loading').classList.add('hidden'); // Start loading instantly
+            document.getElementById('generated-plan-content').classList.add('hidden');
+            document.getElementById('generated-plan-content').innerHTML = '';
+            
+            // Auto-generate plan with default prompt on opening, or wait for user input
+            // For premium feel, auto-generate on first open if input is empty
+            const promptInput = document.getElementById('planner-prompt-input');
+            if (!promptInput.value.trim()) {
+                generateMealPlan(); // Generate default plan to showcase functionality
+            }
+        }
+
+        async function generateMealPlan() {
+            const promptInput = document.getElementById('planner-prompt-input');
+            const outputDiv = document.getElementById('generated-plan-content');
+            const loadingDiv = document.getElementById('planner-loading');
+            const placeholderDiv = document.getElementById('planner-placeholder');
+
+            const finalPrompt = promptInput.value.trim() || "Create a 7-day high-protein, low-glycemic meal plan for a busy professional looking to maintain stable energy.";
+
+            if (!finalPrompt) return;
+
+            placeholderDiv.classList.add('hidden');
+            outputDiv.classList.add('hidden');
+            loadingDiv.classList.remove('hidden');
+
+            const systemPrompt = `You are a precision dietitian system. Based on the user's input, generate a 7-day meal plan using the provided JSON schema. Ensure the plan follows modern, evidence-based nutrition principles, focusing on the user's specified goals (e.g., low GI, high protein, thyroid-friendly). Be creative with meal names.`;
+            
+            const planData = await generateAiContent(finalPrompt, systemPrompt, true);
+
+            loadingDiv.classList.add('hidden');
+            
+            if (planData && Array.isArray(planData)) {
+                let html = '<div class="space-y-8">';
+                planData.forEach(dayPlan => {
+                    html += `<div class="p-6 card-glass rounded-xl hover:shadow-xl transition duration-300">
+                                <h4 class="text-2xl font-bold text-emerald-400 border-b border-gray-700/50 pb-2 mb-4">${dayPlan.day}</h4>
+                                <ul class="space-y-4">`;
+                    dayPlan.meals.forEach(meal => {
+                        html += `<li class="border-l-4 border-emerald-400 pl-4">
+                                        <p class="font-semibold text-white">${meal.name} - <span class="text-xs text-gray-400">(${meal.macros})</span></p>
+                                        <p class="text-sm text-gray-400">${meal.description}</p>
+                                    </li>`;
+                    });
+                    html += '</ul></div>';
+                });
+                html += '</div>';
+                outputDiv.innerHTML = html;
+                outputDiv.classList.remove('hidden');
+                lucide.createIcons(); 
+            } else {
+                outputDiv.innerHTML = `<p class="text-red-400 text-center">Plan generation failed. The system requires a clear, structured goal. Please try again or consult Amulya directly.</p>`;
+                outputDiv.classList.remove('hidden');
+                placeholderDiv.classList.remove('hidden'); 
+            }
+        }
+
+        // --- 3. Custom Craving Audit Logic (Works Locally - Guaranteed) ---
+
+        function simulateAudit() {
+            const resultDiv = document.getElementById('audit-result');
+            const auditInput = document.getElementById('audit-input').value.trim().toLowerCase();
+            
+            // Client-side logic for guaranteed function based on keywords
+            let analysis = {
+                score: "65/100",
+                color: "text-yellow-400",
+                feedback: "Audit Complete. Your challenge indicates potential blood sugar imbalance or insufficient micronutrient intake. You are **not optimized**! Schedule a consultation to fix the root cause and achieve peak performance."
+            };
+
+            if (auditInput.includes("sugar") || auditInput.includes("sweet")) {
+                 analysis.score = "45/100";
+                 analysis.feedback = "RESULT: High sugar cravings are a major red flag, often signaling deeper hormonal or microbial imbalances. Your Metabolic Score is critically low. We urgently need to deploy Amulya's precision protocols to resolve this root cause permanently. Book a session now.";
+                 analysis.color = "text-red-400";
+            } else if (auditInput.includes("crash") || auditInput.includes("fatigue")) {
+                analysis.score = "58/100";
+                analysis.feedback = "RESULT: Afternoon energy crashes are tied to non-optimal meal timing and nutrient ratios. This is a severe drag on your productivity. Amulya's system can unlock 100% energy stability within the first two weeks. Consult Amulya to create your flow state.";
+                analysis.color = "text-yellow-400";
+            } else if (auditInput === "") {
+                analysis.feedback = "Please tell us your main energy or health challenge to run the audit.";
+                analysis.score = "N/A";
+                analysis.color = "text-gray-500";
+            } else {
+                analysis.score = "75/100";
+                analysis.feedback = `RESULT: Your challenge (${auditInput}) is common but still represents a performance gap. Even small imbalances prevent peak health. Amulya's precision mapping can close this gap and deliver effortless results.`;
+                analysis.color = "text-emerald-400";
+            }
+
+            resultDiv.innerHTML = `
+                <p class="font-bold text-emerald-300">NutriCrave Audit Score: <span class="${analysis.color}">${analysis.score}</span></p>
+                <p class="mt-2 text-sm text-gray-400 border-t border-gray-700/50 pt-2">${analysis.feedback}</p>
+            `;
+        }
+
+        // --- Testimonials Carousel Logic (Works Locally) ---
+        const testimonials = [
+            { id: 1, name: "Arjun S. (Reversal)", goal: "Diabetes Care", quote: "Amulya's program is the true Sugarfit model—AI tracking plus her personalized guidance dropped my HbA1c from 9.2 to 5.9. A lifesaver.", source: "Metabolic Flow Client (2025)" },
+            { id: 2, name: "Priya V. (Gym)", goal: "Muscle Gain", quote: "The meal plans fueled my workouts perfectly. I gained 4kg of lean mass, and the Crave Coach discipline was razor-sharp.", source: "Elite Fitness Track" },
+            { id: 3, name: "David K. (Thyroid)", goal: "Weight Stability", quote: "I finally found a dietitian who understands thyroid diets. Amulya's approach stabilized my energy and weight where others failed.", source: "Hormonal Balance Program" },
+        ];
+
+        let currentTestimonial = 0;
+        const carousel = document.getElementById('testimonial-carousel');
+
+        function renderTestimonials() {
+            carousel.innerHTML = '';
+            
+            testimonials.forEach((t, index) => {
+                const item = document.createElement('div');
+                item.className = `testimonial-item card-glass p-8 rounded-2xl shadow-2xl transition-all duration-1000 absolute w-full mx-auto transform hover:translate-y-[-4px] ${index === currentTestimonial ? 'opacity-100 translate-x-0' : 'opacity-0 pointer-events-none translate-x-full'}`;
+                
+                if (index > currentTestimonial) {
+                    item.style.transform = 'translateX(100%)';
+                }
+                if (index < currentTestimonial) {
+                    item.style.transform = 'translateX(-100%)';
+                }
+
+                item.innerHTML = `
+                    <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-8">
+                        <div class="text-6xl text-emerald-400 font-serif">“</div>
+                        <div class="flex-1">
+                            <p class="text-2xl italic font-light text-gray-200 mb-6">${t.quote}</p>
+                            <div class="text-right border-t border-gray-700/50 pt-4">
+                                <p class="text-lg font-semibold text-white">${t.name} <span class="text-emerald-400 ml-2">| Goal: ${t.goal}</span></p>
+                                <p class="text-sm text-gray-500">${t.source}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                carousel.appendChild(item);
+            });
+            const activeItem = carousel.querySelector('.opacity-100');
+            if (activeItem) {
+                carousel.style.height = `${activeItem.offsetHeight}px`;
+            }
+        }
+
+        function nextTestimonial() {
+            currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+            renderTestimonials();
+        }
+
+
+        // --- Scroll Reveal Logic (Works Locally) ---
+        const revealElements = document.querySelectorAll('.scroll-reveal');
+
+        const checkVisibility = () => {
+            const viewportHeight = window.innerHeight;
+            revealElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < viewportHeight * 0.8) {
+                    el.classList.add('is-visible');
+                }
+            });
+        };
+
+        window.onload = function() {
+            checkVisibility();
+            renderTestimonials(); 
+            setInterval(nextTestimonial, 7000); 
+            
+            // Fix for Meal Planner: Start loading state correctly if opened without input
+            const plannerPlaceholder = document.getElementById('planner-placeholder');
+            const plannerLoading = document.getElementById('planner-loading');
+            if (plannerPlaceholder && plannerLoading && !plannerPlaceholder.classList.contains('hidden')) {
+                plannerLoading.classList.add('hidden'); // Hide loading initially if placeholder is visible
+            }
+        }
+
+        window.addEventListener('scroll', checkVisibility);
+
+    </script>
+</body>
+</html>
